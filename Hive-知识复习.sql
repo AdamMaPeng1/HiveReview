@@ -85,7 +85,10 @@ max,min,sum,avg,sqrt,
 -- 字符串类
 -- 日期类
 
--- 空字段赋值: nvl(字段A， 赋值X)
+-- 函数1：nvl()
+    空字段赋值: nvl(字段A， 赋值X)
+
+-- 函数2： case when then else end
 
 */
 -- 1、查看系统自带的函数
@@ -105,9 +108,39 @@ from demo.stuBucket;
 -- 查看 emp ，如果 comm 为null，则赋值为 -1
 select  *,nvl(comm, -1) from demo.emp;
 
+-- 查询：如果员工的 comm 为null ， 则用 领导 id 代替
+select comm, nvl(comm, mgr) from demo.emp;
 
+-- 验证 ：case when then else end
+create table demo.emp_sex(
+name string,
+dept_id string,
+sex string)
+row format delimited fields terminated by "\t";
+/*需求：求出不同部门男女各多少人。
+dept_Id     男       女
+A     		2       1
+B     		1       2
+  */
+select * from demo.emp_sex;
+    select
+    *,
+    case sex when '男' then 1 else 0 end as male,
+    case sex when '女' then 1 else 0 end as female
+    from demo.emp_sex;
 
-
+select
+    dept_id,
+    sum(male) maleCount,
+    sum(female) femaleCount
+from (
+    select
+    *,
+    case sex when '男' then 1 else 0 end as male,
+    case sex when '女' then 1 else 0 end as female
+    from demo.emp_sex
+) t
+group by dept_id;
 
 
 
