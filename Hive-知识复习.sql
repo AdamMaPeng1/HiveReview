@@ -102,8 +102,8 @@ select
     nvl(id, 1111) isNull
 from demo.stuBucket;
 
-select * from demo.stuBucket;
-
+-- 查看 emp ，如果 comm 为null，则赋值为 -1
+select  *,nvl(comm, -1) from demo.emp;
 
 
 
