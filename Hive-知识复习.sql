@@ -76,10 +76,65 @@ select * from demo.stuBucket2;
 /*
 TODO 抽样查询：tablesample(bucket 1 out of 3 on id)
 */
-select * from demo.stuBucket tablesample (bucket 3 out of 3 on id);
+select * from demo.stuBucket tablesample (bucket 3 out of 3 on demo.stuBucket.id);
 
+select sqrt(4);
+select round(rand()*100);
 /*
 TODO 函数
+-- 单行函数
+    数值函数
+        round(double x[, int y]) : 四舍五入
+        sqrt() ：开方
+        ceil() ：向上取整
+        floor()：向下取整
+        rand() : 生成 0，1之间的随机数
+        abs()  : 绝对值
+    字符串函数：
+        substring(string a, int start, int end) : 截取字符串
+        upper():
+        lower():
+        split():
+        concat():
+        concat_ws():
+        replaces()   :
+        regexp_replace:
+        length():
+        get_json_object():
+    日期函数：
+        unix_timestamp():
+        from_unixtime():
+        current_date() :
+        current_timestamp():
+        month():
+        day():
+        hour():
+        datediff:
+        date_add:
+        date_sub():
+        date_format():
+    流程控制函数:
+        nvl()
+        if()
+        case when then else end
+        coalesce(col1,col2,defaultValue): 新增加一列，对col1，col2 列的空值进行查找，如果都为空，则新增列为dV，如果都不是则为col1的值。
+    集合函数
+        array(val1,val2,……):
+        array_contains(Array<T>, value):
+        sort_array():
+        size(array<T>):
+        map(k1,v1,k2,v2):
+        map_keys(map<k,v>):返回map中的key
+        map_values(map<k,v>):
+        struct(v1,v2,v3):
+        named_struct():声明 struct 的属性和值
+
+    流程控制函数
+-- 聚合函数
+
+-- 炸裂函数
+
+-- 窗口函数
 -- 数值类
 max,min,sum,avg,sqrt,
 -- 字符串类
@@ -103,20 +158,79 @@ desc function upper;
 -- 3. 查看某个函数的详细用法
 desc function extended upper;
 
--- 空字段赋值: nvl(field, newValue);
+/*TODO 函数-单行函数-数值函数*/
+select abs(-12.5),
+       sqrt(9),
+       round(-12.341535,3),
+       round(rand()*100),
+       `floor`(12.6),
+       ceil(-12.6);
+/*TODO 函数-单行函数-字符串函数*/
+select length('Adam'),
+       repeat('Adam', 2),
+       upper('ads'),
+       lower('Ada'),
+       substring('Adam Mapeng', -5),
+       replace('Adam Mapeng', 'a', 'e'),
+       trim('  Adam Mapeng   '),
+       regexp_replace('100-200', '(\\d+)', 'num'),
+        'dfsaaaa' regexp 'dfsa+',
+         'dfsaaaa' regexp 'dfsb+',
+         split('192.168.11.12','\\.'),
+         concat('Adam', 'Mapeng'),
+         concat_ws('.',`array`("192","168","11","12")),
+         get_json_object('[{"name":"大海海","sex":"男","age":"25"},{"name":"小宋宋","sex":"男","age":"47"}]','$.[0].name')
+       ;
+/*TODO 函数-单行函数-日期函数
+--    日期函数：
+        unix_timestamp():
+        from_unixtime():
+        current_date() :
+        current_timestamp():
+        month():
+        day():
+        hour():
+        datediff:
+        date_add:
+        date_sub():
+        date_format():
+  */
+select
+    year('2023-12-21'),
+    month('2023-12-21'),
+    weekofyear('2023-12-21'),
+    dayofmonth('2023-12-21'),
+    `dayofweek`('2023-12-21'),
+    day('2023-12-21'),
+    `current_date`(),
+    `current_timestamp`(),
+    date_add(`current_date`(),1),
+    date_sub(`current_date`(),1),
+    datediff('2023-10-15','2023-10-01'),
+    date_format(`current_timestamp`(),'yyyy/MM/dd HH:mm:ss');
+/*TODO 函数-单行函数-集合函数*/
+select
+    `array`(3,4,5,3)[1],
+    array_contains(`array`(2,32,4,55,46),2),
+    sort_array(`array`(2,32,4,55,46)),
+    size(`array`(2,32,4,55,46)),
+    `map`('name','Adam','age',12)['name'],
+    map_keys(`map`('name','Adam','age',12)),
+    map_values(`map`('name','Adam','age',12)),
+    struct('adam',12),
+    named_struct('Name','Adam','age',18);
+/*TODO 函数-单行函数-流程控制函数*/
+--空字段赋值: nvl(field, newValue);
 select
     id,
     name,
     nvl(id, 1111) isNull
 from demo.stuBucket;
-
 -- 查看 emp ，如果 comm 为null，则赋值为 -1
 select  *,nvl(comm, -1) from demo.emp;
-
 -- 查询：如果员工的 comm 为null ， 则用 领导 id 代替
 select comm, nvl(comm, mgr) from demo.emp;
-
--- 验证 ：case when then else end
+--case when then else end 函数
 create table demo.emp_sex(
 name string,
 dept_id string,
@@ -154,7 +268,46 @@ group by dept_id;
         when '女1' then 2
         else 0 end as male,
     case sex when '女' then 1 else 0 end as female
-    from demo.emp_sex
+    from demo.emp_sex;
+
+/*练习： 函数-单行函数*/
+-- 1.建表
+create  table  demo.singleLineFunc(
+    name string,  --姓名
+    sex  string,  --性别
+    birthday string, --出生年月
+    hiredate string, --入职日期
+    job string,   --岗位
+    salary double, --薪资
+    bonus double,  --奖金
+    friends array<string>, --朋友
+    children map<string,int> --孩子
+);
+-- 2.向表中插入数据
+ insert into demo.singleLineFunc
+  values('张无忌','男','1980/02/12','2022/08/09','销售',3000,12000,array('阿朱','小昭'),map('张小无',8,'张小忌',9)),
+        ('赵敏','女','1982/05/18','2022/09/10','行政',9000,2000,array('阿三','阿四'),map('赵小敏',8)),
+        ('宋青书','男','1981/03/15','2022/04/09','研发',18000,1000,array('王五','赵六'),map('宋小青',7,'宋小书',5)),
+        ('周芷若','女','1981/03/17','2022/04/10','研发',18000,1000,array('王五','赵六'),map('宋小青',7,'宋小书',5)),
+        ('郭靖','男','1985/03/11','2022/07/19','销售',2000,13000,array('南帝','北丐'),map('郭芙',5,'郭襄',4)),
+        ('黄蓉','女','1982/12/13','2022/06/11','行政',12000,null,array('东邪','西毒'),map('郭芙',5,'郭襄',4)),
+        ('杨过','男','1988/01/30','2022/08/13','前台',5000,null,array('郭靖','黄蓉'),map('杨小过',2)),
+        ('小龙女','女','1985/02/12','2022/09/24','前台',6000,null,array('张三','李四'),map('杨小过',2));
+    select * from demo.singleLineFunc;
+-- 需求1 ： 统计每个月的入职人数
+select
+    month(replace(hiredate,'/','-')) hireMonth,
+    count(name) hireNumber
+from demo.singleLineFunc
+group by month(replace(hiredate,'/','-'));
+-- 需求2：查询每个人的年龄（年 + 月）
+select
+    name,
+    concat(`floor`(datediff(`current_date`(),replace(birthday,'/','-'))/365),'年',`floor`(datediff(`current_date`(),replace(birthday,'/','-'))%365/30),'月')
+from demo.singleLineFunc;
+--
+
+
 
 /*行转列：concat() , concat_set()
     需求：
@@ -245,22 +398,13 @@ create table demo.pracExplode(
 row format delimited fields terminated by "\t";
 -- 2、将数据加载到表中
 load data local inpath "/home/atguigu/practiceFile/pracExplode.txt" into table demo.pracExplode;
-
-select
-    movie,
-    split(category, ',')[1]
-from demo.pracExplode;
-
-
+-- 最终sql
 select
     movie,
     categoryAlias
 from demo.pracExplode
 lateral view
     explode(split(category, ',')) explodeAlias as categoryAlias;
-
-
-select * from demo.userinfo;
 
 -- select
 --     name father,
@@ -270,9 +414,36 @@ select * from demo.userinfo;
 -- lateral view
 --     explode(children) userInfoAlias as childrenName,childrenAge ;
 
+/*函数：开窗函数
+    over()
+    lag():
+    lead():
+    ntile()
 
-
-
+需求：
+数据样例如下：
+name，orderdate，cost
+jack,2017-01-01,10
+tony,2017-01-02,15
+jack,2017-02-03,23
+tony,2017-01-04,29
+jack,2017-01-05,46
+（1）查询在2017年4月份购买过的顾客及总人数
+（2）查询顾客的购买明细及月购买总额
+（3）上述的场景, 将每个顾客的cost按照日期进行累加
+（4）查询每个顾客上次的购买时间
+（5）查询前20%时间的订单信息
+*/
+-- 1.建表
+create table demo.pracOver(
+name string,
+orderdate string,
+cost int
+) ROW FORMAT DELIMITED FIELDS TERMINATED BY ',';
+-- 2.装载数据
+load data local inpath "/home/atguigu/practiceFile/pracOver.txt" into table demo.pracOver;
+-- 3.需求1：查询在2017年4月份购买过的顾客及总人数
+show databases ;
 
 
 
