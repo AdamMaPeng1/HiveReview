@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="SqlDialectMappings">
-    <file url="file://$PROJECT_DIR$/Hive-知识复习.sql" dialect="HiveQL" />
+    <file url="file://$PROJECT_DIR$/Hive-知识复习.sql" dialect="Redshift" />
     <file url="PROJECT" dialect="HiveQL" />
   </component>
 </project>

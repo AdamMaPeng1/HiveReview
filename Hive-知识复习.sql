@@ -297,18 +297,78 @@ create  table  demo.singleLineFunc(
 -- 需求1 ： 统计每个月的入职人数
 select
     month(replace(hiredate,'/','-')) hireMonth,
-    count(name) hireNumber
-from demo.singleLineFunc
-group by month(replace(hiredate,'/','-'));
+    count(name) hireCount
+from
+    demo.singleLineFunc
+group by
+    month(replace(hiredate,'/','-'));
+
 -- 需求2：查询每个人的年龄（年 + 月）
+/*
+name	age
+张无忌	42年8月
+赵敏	    40年5月
+宋青书	41年7月
+*/
+-- 错误解答
 select
     name,
-    concat(`floor`(datediff(`current_date`(),replace(birthday,'/','-'))/365),'年',`floor`(datediff(`current_date`(),replace(birthday,'/','-'))%365/30),'月')
+    concat(`floor`(datediff(`current_date`(),replace(birthday,'/','-'))/365),'年',
+           `round`(datediff(`current_date`(),replace(birthday,'/','-'))%365/30),'月')
 from demo.singleLineFunc;
---
-
-
-
+-- 正确解答
+--1） 将 birthday 中的 / 替换成标准日期的 - 分隔符
+select
+    name,
+    replace(birthday,'/','-')
+from
+    demo.singleLineFunc;
+--2）获取 当前时间与生日的年、月差值
+select
+    name,
+    (year(`current_date`()) - year(birth)) yearDiff,
+    (month(`current_date`()) - month(birth)) monthDiff
+from (
+    select
+        name,
+        replace(birthday,'/','-') birth
+    from
+        demo.singleLineFunc
+) t1;
+-- 判断 年，月是否>=0,
+select
+    name,
+    concat( `if`(monthDiff>=0, yearDiff, yearDiff-1), '年',`if`(monthDiff>=0, monthDiff, monthDiff+12), '月') age
+from (
+    select
+        name,
+        (year(`current_date`()) - year(birth)) yearDiff,
+        (month(`current_date`()) - month(birth)) monthDiff
+    from (
+        select
+            name,
+            replace(birthday,'/','-') birth
+        from
+            demo.singleLineFunc
+    ) t1
+) t2;
+-- 案例3：按照薪资，奖金的和进行倒序排序，如果奖金为null，置位0
+-- 1.如果奖金为null，则置为 0
+select
+    name,
+    salary + `if`(bonus is null, 0, bonus) totalSal,
+    salary,
+    `if`(bonus is null, 0, bonus) bonu
+from demo.singleLineFunc
+order by salary + `if`(bonus is null, 0, bonus) desc;
+-- 优化：使用 nvl 函数， & order by 是在字段结果后的，所以可以使用别名
+select
+    name,
+    (salary + nvl(bonus,0)) totalSal
+from
+    demo.singleLineFunc
+order by
+    totalSal;
 /*行转列：concat() , concat_set()
     需求：
        将如下的数据转换成：
