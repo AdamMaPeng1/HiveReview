@@ -129,11 +129,20 @@ TODO 函数
         struct(v1,v2,v3):
         named_struct():声明 struct 的属性和值
 
-    流程控制函数
--- 聚合函数
-
+-- 聚合函数:
+       count(), min(), max() ,sum(), avg() ,……
+       -- 1.collect_list
+       -- 2.collect_set
 -- 炸裂函数
-
+       explode():
+           语法一：explode(array<T> a)
+           语法二：explode(map<K,V> m)
+        posexplode():
+           语法：posexplode(array<T> a)
+        inline():
+            语法：inline(array<struct<f1:T1,...,fn:Tn>> a)
+                select inline(`array`(struct('Id',1,'Name','Adam','Age',18),struct('Id',2,'Name','Tom','Age',22))); 所有数据都作为值出现
+                select inline(`array`(named_struct('Id',1,'Name','Adam','Age',18),named_struct('Id',2,'Name','Tom','Age',22))) ; --struct 中的第一个数据作为字段名出现
 -- 窗口函数
 -- 数值类
 max,min,sum,avg,sqrt,
@@ -369,6 +378,133 @@ from
     demo.singleLineFunc
 order by
     totalSal;
+-- 案例4：查询每个人有多少个朋友
+select
+    name,
+    size(friends) friendsCount
+from demo.singleLineFunc;
+-- 案例5：查询每个人的孩子的姓名
+-- 1）先得到孩子的列表
+select
+    name,
+    map_keys(children) Childrens
+from demo.singleLineFunc;
+-- 2）将孩子的列表进行炸裂
+select
+    name parentName,
+    c1 childrenName
+from (
+    select
+        name,
+        map_keys(children) Childrens
+    from demo.singleLineFunc
+) t1
+lateral view
+    explode(Childrens) tmpAlias as c1;
+-- 案例六：查询每个岗位男女各多少人
+select
+    job,
+    nvl(sum(case sex when '男' then 1 end),0) male,
+    nvl(sum(case sex when '女' then 1 end),0) famale
+from demo.singleLineFunc
+group by job;
+-- 优化：if
+select
+    job,
+    sum(`if`(sex='男',1,0)) male,
+    sum(`if`(sex='女',1,0)) female
+from demo.singleLineFunc
+group by
+    job;
+/*
+TODO 函数-聚合函数
+-- 1.collect_list
+-- 2.collect_set
+*/
+-- 1.collect_list
+select
+    sex,
+    collect_list(job) jobList
+from demo.singleLineFunc
+group by
+    sex;
+-- 2.collect_set
+select
+    sex,
+    collect_set(job) jobList
+from demo.singleLineFunc
+group by
+    sex;
+-- （1）每个月的入职人数以及姓名
+select
+    month(replace(hiredate,'/','-')) Months,
+    count(name) hireCount,
+    collect_list(name)
+from demo.singleLineFunc
+group by
+    month(replace(hiredate,'/','-'));
+
+/*TODO-函数-炸裂函数
+  --
+       explode():
+           语法一：explode(array<T> a)
+           语法二：explode(map<K,V> m)
+        posexplode():
+           语法：posexplode(array<T> a)
+        inline():
+            语法：inline(array<struct<f1:T1,...,fn:Tn>> a)
+                select inline(`array`(struct('Id',1,'Name','Adam','Age',18),struct('Id',2,'Name','Tom','Age',22))); 所有数据都作为值出现
+                select inline(`array`(named_struct('Id',1,'Name','Adam','Age',18),named_struct('Id',2,'Name','Tom','Age',22))) ; --struct 中的第一个数据作为字段名出现
+*/
+select explode(array(1,3,4,5,6)) as num;
+select explode(`map`('name','Adam','age',18)) as (col1,col2);
+select posexplode(array(1,3,4,5,6)) as (index,num);
+-- select posexplode(`map`('name','Adam','age',18)) as (col1,col2);     posexplode()只接受 array 数组
+select inline(`array`(named_struct('Id',1,'Name','Adam','Age',18),named_struct('Id',2,'Name','Tom','Age',22))) ;
+select inline(`array`(struct('Id',1,'Name','Adam','Age',18),struct('Id',2,'Name','Tom','Age',22))) ;
+/*
+需求：
+    统计各分类的电影数量
+剧情	2
+动作	3
+心理	1
+*/
+-- 1) 炸裂，将电影的所属类别均展开
+select
+    movie,
+    cateAlias
+from
+    demo.pracExplode
+lateral view explode(split(category,',')) categoryAlias as cateAlias;
+-- 按照类别统计电影数量
+select
+    cateAlias,
+    count(movie) movieCount
+from (
+    select
+        movie,
+        cateAlias
+    from
+        demo.pracExplode
+    lateral view explode(split(category,',')) categoryAlias as cateAlias
+) t1
+group by cateAlias;
+
+/*
+高级聚合函数： collect_list(), collect_set()
+*/
+-- 需求：求每个月的入职人员和姓名
+select
+    month(replace(birthday,'/','-')) month,
+    count(name) hireCount,
+    collect_set(name) nameList
+from
+    demo.singleLineFunc
+group by
+    month(replace(birthday,'/','-'));
+
+
+
 /*行转列：concat() , concat_set()
     需求：
        将如下的数据转换成：
